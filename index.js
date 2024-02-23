@@ -5,12 +5,27 @@ let hasRestaurentSeenYourOrder = false;
 
 let restaurentTimer = null;
 
+let valetTimer = null;
+
+let valetDeliveryTimer = null;
+let isOrderDelivered = false;
+
 const acceptOrder = document.getElementById("acceptOrder");
 console.log(acceptOrder);
 
 window.addEventListener("load", () => {
   acceptOrder.addEventListener("click", () => {
     askRestaurentToAcceptOrReject();
+  });
+
+  document.getElementById("findValet").addEventListener("click", () => {
+    startSearchingForVaulets();
+  });
+
+  this.document.getElementById("deliverOrder").addEventListener("click", () => {
+    setTimeout(() => {
+      isOrderDelivered = true;
+    }, 2000);
   });
 
   checkIfOrderAcceptedOrNot()
@@ -61,8 +76,9 @@ function startPreparingOrder() {
   Promise.allSettled([
     updateOrderStatus(),
     UpdateMapView(),
-    // startSearchingForVaulets(),
-    // checkForOrderDelivery(),
+    checkIfValetAssigned,
+
+    checkForOrderDelivery(),
   ])
     .then((res) => {
       console.log(res);
@@ -76,7 +92,9 @@ function startPreparingOrder() {
 }
 
 function updateOrderStatus() {
-  document.getElementById("currentStatus").innerText = `Preparing Your Order`;
+  document.getElementById("currentStatus").innerText = isOrderDelivered
+    ? "Order Delivered Successfully"
+    : `Preparing Your Order`;
 }
 
 function UpdateMapView() {
@@ -88,6 +106,61 @@ function UpdateMapView() {
   });
 }
 
-function startSearchingForVaulets() {}
+function startSearchingForVaulets() {
+  const valetPromises = [];
+  for (let i = 0; i < 5; i++) {
+    valetPromises.push(getRandomDriver());
+  }
+  console.log(valetPromises);
 
-function getRandomDriver() {}
+  Promise.any(valetPromises)
+    .then((selectedValet) => {
+      console.log("Select a vallet", selectedValet);
+      isWaletFound = true;
+    })
+    .catch((err) => {
+      console.error(err);
+    });
+}
+
+function getRandomDriver() {
+  return new Promise((resolve, reject) => {
+    const timeout = Math.random() * 1000;
+    setTimeout(() => {
+      resolve("Valet - " + timeout);
+    }, timeout);
+  });
+}
+
+function checkIfValetAssigned() {
+  return new Promise((resolve, reject) => {
+    valetTimer = setInterval(() => {
+      if (isWaletFound) {
+        UpdateValetDetails();
+        resolve("Updated Valet details");
+        clearTimeout(valetTimer);
+      }
+    }, 1000);
+  });
+}
+
+function checkForOrderDelivery() {
+  return new Promise((resolve, reject) => {
+    valetDeliveryTimer = setInterval(() => {
+      console.log("Is order delivered by valet");
+      if (isOrderDelivered) {
+        resolve("Order delivered Valet details");
+        updateOrderStatus();
+        clearTimeout(valetTimer);
+      }
+    }, 1000);
+  });
+}
+
+function UpdateValetDetails() {
+  if (isWaletFound) {
+    document.getElementById("finding-driver").classList.add("none");
+    document.getElementById("found-driver").classList.remove("none");
+    document.getElementById("call").classList.remove("none");
+  }
+}
